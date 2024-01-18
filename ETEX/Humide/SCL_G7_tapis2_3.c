@@ -1,6 +1,16 @@
 !
+(****************************)
+(* Nom : G7 tapis 2/3       *)
+(*                          *)
+(* Le 18/01/2024            *)
+(* Par IMAP3S               *)
+(****************************)
+
+!
 (* Synthèse ligne *)
+Synthtapis3pret:=FALSE;
 Synthl2prete:=F2s6_ligne2_ok AND NOT F2s6_fin_prise_plaque2 AND NOT Mem_plaque_mauv_tapis2 AND NOT Mem_plaque_avant_mauv_tapis2 AND NOT Mem_plaque_entière_tapis2 AND Arret_tapis2_t1_vers_t2.T>=2 AND Arret_tapis2_t1_vers_t2;
+
 !
 (* Gestion de la tempo d'étape *)
 Fm_seconde:=Seconde AND NOT Memo_fm_seconde;
@@ -9,11 +19,13 @@ Memo_fm_seconde:=Seconde;
 IF Fm_seconde AND G7_tapis23_t1s<32000 THEN
 	G7_tapis23_t1s:=G7_tapis23_t1s+1;
 END_IF;
+
 !
 (* RAZ Séquence *)
 IF NOT Essai_newg7_tapis23(*OR Init_macro2_tapis2*) THEN
 	G7_tapis23_numetape:=0;
 END_IF;
+
 !
 (* Etape 0 : Initialisation : Autorisation de démarrer la "macro" *)
 IF G7_tapis23_numetape=0 AND Essai_newg7_tapis23 AND NOT Sel_marche_force AND NOT Tps_plus_marche_forcee.R AND Cond_marche_tapis2 THEN
@@ -26,6 +38,7 @@ IF G7_tapis23_numetape=0 AND Essai_newg7_tapis23 AND NOT Sel_marche_force AND NO
 	G7_tapis23_t1s:=0;
 	JUMP %L99;
 END_IF;
+
 !
 (* Etape 10 : Arrêt tapis 2 *)
 IF G7_tapis23_numetape=10 THEN
@@ -37,6 +50,7 @@ IF G7_tapis23_numetape=10 THEN
 		JUMP %L99;
 	END_IF;
 END_IF;
+
 !
 (* Etape 20 : Marche tapis 2 GV *)
 IF G7_tapis23_numetape=20 THEN
@@ -51,6 +65,7 @@ IF G7_tapis23_numetape=20 THEN
 		JUMP %L99;
 	END_IF;
 END_IF;
+
 !
 (* Etape 100 : Marche tapis 2 PV *)
 IF G7_tapis23_numetape=100 THEN
@@ -62,6 +77,7 @@ IF G7_tapis23_numetape=100 THEN
 		JUMP %L99;
 	END_IF;
 END_IF;
+
 !
 (* Etape 110 : Arrêt tapis (SI plaque=1) et compteur plaque-1 *)
 IF G7_tapis23_numetape=110 THEN
@@ -95,6 +111,7 @@ IF G7_tapis23_numetape=110 THEN
 		JUMP %L99;
 	END_IF;
 END_IF;
+
 !
 (* Etape 200 : Marche tapis 2 PV *)
 IF G7_tapis23_numetape=200 THEN
@@ -106,28 +123,30 @@ IF G7_tapis23_numetape=200 THEN
 		JUMP %L99;
 	END_IF;
 END_IF;
+
 !
 (* Etape 210 : Marche tapis 2 PV *)
 IF G7_tapis23_numetape=210 THEN
 
-	(* Transition : *)
-	IF FALSE THEN
+	(* Transition : Ligne 2 prête *)
+	IF NOT Synthtapis3pret AND Synthl2prete AND Valeur_v1_courante_mm>=180 THEN
 		G7_tapis23_numetape:=220;
 		G7_tapis23_t1s:=0;
 		JUMP %L99;
 	END_IF;
-	(* Transition *)
-	IF FALSE THEN
+	(* Transition : Ligne 1 prête *)
+	IF Synthtapis3pret AND Valeur_v1_courante_mm>=180 THEN
 		G7_tapis23_numetape:=20;
 		G7_tapis23_t1s:=0;
 		JUMP %L99;
 	END_IF;
 END_IF;
+
 !
 (* Etape 220 : Arrêt taous 2 & Nbr plaque à traiter -1 *)
 IF G7_tapis23_numetape=220 THEN
 
-	(* Transition *)
+	(* Transition : Contrôle pas de prise en cours *)
 	IF NOT F2s6_fin_prise_plaque2 THEN
 		(* Compteur de plaque - Sur FRONT MONTANT *)
 		G7_tapis23_cptplaqueatraiter:=G7_tapis23_cptplaqueatraiter-1;
@@ -137,6 +156,7 @@ IF G7_tapis23_numetape=220 THEN
 		JUMP %L99;
 	END_IF;
 END_IF;
+
 !
 (* Etape 230 : Arrêt tapis 2 - Prise serviteur *)
 IF G7_tapis23_numetape=230 THEN
@@ -154,6 +174,7 @@ IF G7_tapis23_numetape=230 THEN
 		JUMP %L99;
 	END_IF;
 END_IF;
+
 !
 (* Fin *)
 %L99:
