@@ -8,7 +8,7 @@
 
 !
 (* Synthèse ligne *)
-Synthtapis3pret:=FALSE;
+Synthtapis3pret:=F2s5_depart_tapis3;
 Synthl2prete:=F2s6_ligne2_ok AND NOT F2s6_fin_prise_plaque2 AND NOT Mem_plaque_mauv_tapis2 AND NOT Mem_plaque_avant_mauv_tapis2 AND NOT Mem_plaque_entière_tapis2 AND Arret_tapis2_t1_vers_t2.T>=2 AND Arret_tapis2_t1_vers_t2;
 
 !
