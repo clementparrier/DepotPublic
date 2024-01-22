@@ -1,0 +1,272 @@
+﻿FUNCTION_BLOCK "FB_ETOR_V00.001"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      UDT_Time { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "UDT_Time";
+      In_Entree : Bool;   // Entrée brute
+      In_CtrlMont : Bool;   // Activation du controle de la montée de l'entrée
+      In_CtrlRetomb : Bool;   // Activation du controle de la retombée de l'entrée
+   END_VAR
+
+   VAR_OUTPUT 
+      Out_Defaut : Bool;   // Sortie défaut
+      Out_Inhibition : Bool;
+      Out_Entree : Bool;
+      Out_Acquittement : Bool;   // Sortie inhibition
+      FM_Entree : Bool;
+      FD_Entree : Bool;
+   END_VAR
+
+   VAR_IN_OUT 
+      IHM : "UDT_EntreeTOR";   // Structure IHM
+      ZoneAPI : "UDT_Zone_API";   // Structure ZONE
+   END_VAR
+
+   VAR 
+      _bMemo_FM : Bool;
+      _bMemo_FD : Bool;
+      _bDefNonMont : Bool;
+      _bDefNonRetomb : Bool;
+      _bIn_EntreeTrait : Bool;
+      _bIHM_ModeAuto : Bool;
+      _bIHM_ModeManu { S7_SetPoint := 'True'} : Bool;
+      _bIHM_ManuForce1 : Bool;
+      _bIHM_ManuForce0 : Bool;
+      _bIHM_InhibCtrlMont : Bool;
+      _bIHM_InhibCtrlRetomb : Bool;
+      _bIHM_Acquittement : Bool;
+      _tTpsDefEntree { S7_SetPoint := 'True'} : Time;
+      _TON_DEF_NonMont { S7_SetPoint := 'False'} : "FB_TIMER_IMAP_V01";
+      _TON_DEF_NonRetomb : "FB_TIMER_IMAP_V01";
+      _bSyntheseAcquittement { S7_SetPoint := 'True'} : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      _iTemp : Int;
+   END_VAR
+
+
+BEGIN
+	REGION Info Bloc
+	(*
+	    //========================================================================================================================================
+	    // IMAP 3S // 
+	    // ---------------------------------------------------------------------------------------------------------------------------------------
+	    // Bibliothèque: Standard IMAP 3S
+	    // Titre : Entrée Tout ou Rien
+	    // Fonction : Gestion d'une entrée TOR
+	    // ---------------------------------------------------------------------------------------------------------------------------------------
+	    // Changement des versions :
+	    // Version      Date            Editeur                   Modification(s)
+	    // 00.00.001     16/16/2021      Clément PARRIER           Création de la version initiale (basé sur le modèle existant LADDER
+	  // Test
+	  //========================================================================================================================================
+	*)
+	END_REGION
+	
+	REGION Lecture des entrées
+	    
+	    REGION Bits In_Commande
+	        #_bIHM_ModeManu := #IHM.In_Commande.%X0;
+	        #_bIHM_ManuForce1 := #IHM.In_Commande.%X1;
+	        #_bIHM_ManuForce0 := #IHM.In_Commande.%X2;
+	        (*_bIHM_Reserve := #IHM.In_Commande.%X3;*)
+	        (*_bIHM_Reserve:= #IHM.In_Commande.%X4;*)
+	        (*_bIHM_Reserve:= #IHM.In_Commande.%X5;*)
+	        (*_bIHM_Reserve:= #IHM.In_Commande.%X6;*)
+	        (*_bIHM_Reserve := #IHM.In_Commande.%X7 ; *)
+	        #_bIHM_InhibCtrlMont := #IHM.In_Commande.%X8;
+	        #_bIHM_InhibCtrlRetomb := #IHM.In_Commande.%X9;
+	        (*_bIHM_Reserve := IHM.In_Commande.%X10;*)
+	        (*_bIHM_Reserve := IHM.In_Commande.%X11;*)
+	        (*_bIHM_Reserve:= IHM.In_Commande.%X12;*)
+	        (*_bIHM_Reserve:= IHM.In_Commande.%X13;*)
+	        (*_bIHM_Reserve:= IHM.In_Commande.%X14;*)
+	        (*_bIHM_Reserve := #IHM.In_Commande.%X15;*)
+	        
+	        (*_bIHM_Reserve := IHM.In_Commande.%X16;*)
+	        (*_bIHM_Reserve := IHM.In_Commande.%X17;*)
+	        (*_bIHM_Reserve:= IHM.In_Commande.%X18;*)
+	        (*_bIHM_Reserve:= IHM.In_Commande.%X19;*)
+	        (*_bIHM_Reserve:= IHM.In_Commande.%X20;*)
+	        (*_bIHM_Reserve:= IHM.In_Commande.%X21;*)
+	        (*_bIHM_Reserve:= IHM.In_Commande.%X22;*)
+	        (*_bIHM_Reserve:= IHM.In_Commande.%X23;*)
+	        
+	        (*_bIHM_Reserve:= #IHM.In_Commande.%X24;*)
+	        (*_bIHM_Reserve:= #IHM.In_Commande.%X25;*)
+	        (*_bIHM_Reserve:= #IHM.In_Commande.%X26;*)
+	        (*_bIHM_Reserve:= #IHM.In_Commande.%X27;*)
+	        (*_bIHM_Reserve:= #IHM.In_Commande.%X28;*)
+	        (*_bIHM_Reserve:= #IHM.In_Commande.%X29;*)
+	        (*_bIHM_Reserve:= #IHM.In_Commande.%X30;*)
+	        #_bIHM_Acquittement := #IHM.In_Commande.%X31;
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION Traitements des bits commandes
+	    
+	    #_bIHM_ModeAuto := NOT #_bIHM_ModeManu;
+	    
+	    REGION RAZ commande acquittement
+	        #_bSyntheseAcquittement := #ZoneAPI.Acquittement OR #_bIHM_Acquittement;
+	        
+	        IF #_bSyntheseAcquittement THEN
+	            (*RAZ le commande Réarm. IHM*)
+	            #IHM.In_Commande.%X31 := FALSE;(*#_IHM_bAcquittement*)
+	        END_IF;
+	    END_REGION
+	END_REGION
+	
+	REGION Initialisations
+	    
+	END_REGION
+	
+	REGION Gestions
+	    
+	    REGION Aquittement des défauts
+	        IF #_bSyntheseAcquittement THEN
+	            #_bDefNonMont := FALSE;
+	            #_bDefNonRetomb := FALSE;
+	        END_IF;
+	    END_REGION
+	
+	    END_REGION
+	
+	    REGION Traitement de l'entrée à 1
+	        
+	        (* Entrée=1, incrément à la seconde *)
+	        IF #In_Entree AND #UDT_Time.Front.Seconde AND #IHM.Out_TpsOn < 32000 AND #IHM.Out_TpsOn < #IHM.In_TpsOn THEN
+	            #IHM.Out_TpsOn := #IHM.Out_TpsOn + 1;
+	        END_IF;
+	        IF NOT #In_Entree THEN
+	            #IHM.Out_TpsOn := 0;
+	        END_IF;
+	    END_REGION
+	    REGION Traitement de l'entrée à 0
+	        (* Entrée=0, incrément à la seconde *)
+	        IF NOT #In_Entree AND #UDT_Time.Front.Seconde AND #IHM.Out_TpsOff < 32000 AND #IHM.Out_TpsOff < #IHM.In_TpsOn THEN
+	            #IHM.Out_TpsOff := #IHM.Out_TpsOff + 1;
+	        END_IF;
+	        IF #In_Entree THEN
+	            #IHM.Out_TpsOff := 0;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION Défaut 
+	        
+	        REGION Defaut à la non montée
+	            #_TON_DEF_NonMont(In_Active:=#In_CtrlMont AND NOT #In_Entree AND NOT #_bIHM_InhibCtrlMont,In_Type:="TIMER.TON",In_Tempo:=#_tTpsDefEntree);
+	                
+	            IF #_TON_DEF_NonMont.Q THEN
+	                 #_bDefNonMont := TRUE;
+	            END_IF;
+	        END_REGION
+	        
+	        REGION Défaut à la non descente
+	            #_TON_DEF_NonRetomb(In_Active:=#In_CtrlRetomb AND #In_Entree AND NOT #_bIHM_InhibCtrlRetomb,In_Type:="TIMER.TON",In_Tempo:=#_tTpsDefEntree);
+	                
+	            IF #_TON_DEF_NonRetomb.Q THEN
+	                #_bDefNonRetomb := TRUE;
+	            END_IF;
+	        END_REGION
+	        
+	    END_REGION
+	
+	    REGION Sorties bloc
+	        REGION Sortie
+	            #Out_Entree :=
+	            
+	            #_bIHM_ModeAuto AND (#In_Entree AND #IHM.Out_TpsOn >= #IHM.In_TpsOn) AND NOT #_bIHM_ManuForce0 OR // 0->1 temporisé
+	            #_bIHM_ModeAuto AND (#Out_Entree AND #IHM.Out_TpsOff >= #IHM.In_TpsOff) AND NOT #_bIHM_ManuForce0 OR // 1 -> 0 temporisé
+	            #_bIHM_ModeManu AND NOT #_bIHM_ManuForce0 AND #_bIHM_ManuForce1; // Manu 1
+	        END_REGION
+	        
+	        
+	        REGION Affecter les sorties du bloc
+	            #Out_Defaut := #_bDefNonMont OR #_bDefNonRetomb;
+	            #Out_Acquittement := #_bSyntheseAcquittement;
+	            #Out_Inhibition := #_bIHM_InhibCtrlMont OR #_bIHM_InhibCtrlRetomb;
+	        END_REGION
+	        
+	    END_REGION
+	    
+	    REGION
+	        REGION Compteurs de zone (forçage/défaut/inhibition)
+	            (*Forçage*)
+	            IF #_bIHM_ModeManu THEN
+	                    #ZoneAPI.Calcul.NbForcage := #ZoneAPI.Calcul.NbForcage + 1;
+	                END_IF;
+	                
+	                (*Inhibition*)
+	                IF #Out_Inhibition THEN
+	                    #ZoneAPI.Calcul.NbInhibition := #ZoneAPI.Calcul.NbInhibition + 1;
+	                END_IF;
+	                
+	                (*Défaut*)
+	                IF #Out_Defaut THEN
+	                    #ZoneAPI.Calcul.NbDefaut := #ZoneAPI.Calcul.NbDefaut + 1;
+	                END_IF;
+	            END_REGION
+	            
+	            REGION Message défaut SIEMENS
+	                //#_AlarmDefRetAvance(SIG := #_bDefRetAvance);
+	                //#_AlarmDefRetRecul(SIG := #_bDefRetRecul);
+	            END_REGION
+	            
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION Ecriture UDT IHM
+	    
+	    REGION Bits Out_Animation
+	        #IHM.Out_Animation.%X0 := #Out_Entree;
+	        #IHM.Out_Animation.%X1 := #In_CtrlMont;
+	        #IHM.Out_Animation.%X2 := #In_CtrlRetomb;
+	        #IHM.Out_Animation.%X3 := #_bIHM_ModeManu;
+	        #IHM.Out_Animation.%X4 := #_bIHM_InhibCtrlMont;
+	        #IHM.Out_Animation.%X5 := #_bIHM_InhibCtrlRetomb;
+	        #IHM.Out_Animation.%X6 := FALSE;
+	        #IHM.Out_Animation.%X7 := FALSE;
+	        
+	        #IHM.Out_Animation.%X8 := #In_Entree;
+	        #IHM.Out_Animation.%X9 := FALSE;
+	        #IHM.Out_Animation.%X10 := FALSE;
+	        #IHM.Out_Animation.%X11 := FALSE;
+	        #IHM.Out_Animation.%X12 := FALSE;
+	        #IHM.Out_Animation.%X13 := FALSE;
+	        #IHM.Out_Animation.%X14 := FALSE;
+	        #IHM.Out_Animation.%X15 := FALSE;
+	        
+	        #IHM.Out_Animation.%X16 := #_bDefNonMont;
+	        #IHM.Out_Animation.%X17 := #_bDefNonRetomb;
+	        #IHM.Out_Animation.%X18 := FALSE;
+	        #IHM.Out_Animation.%X19 := FALSE;
+	        #IHM.Out_Animation.%X20 := FALSE;
+	        #IHM.Out_Animation.%X21 := FALSE;
+	        #IHM.Out_Animation.%X22 := FALSE;
+	        #IHM.Out_Animation.%X23 := FALSE;
+	        
+	        #IHM.Out_Animation.%X24 := FALSE;
+	        #IHM.Out_Animation.%X25 := FALSE;
+	        #IHM.Out_Animation.%X26 := FALSE;
+	        #IHM.Out_Animation.%X27 := FALSE;
+	        #IHM.Out_Animation.%X28 := FALSE;
+	        #IHM.Out_Animation.%X29 := FALSE;
+	        #IHM.Out_Animation.%X30 := FALSE;
+	        #IHM.Out_Animation.%X31 := FALSE;
+	    END_REGION
+	    
+	
+	    REGION Etat animation
+	    
+	    END_REGION
+	    
+	    
+	END_REGION
+	
+	
+END_FUNCTION_BLOCK
+
